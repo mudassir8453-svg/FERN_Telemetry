@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FERN F1 Telemetry</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/radial/gauge.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --neon-green: #00ff88;
+            --neon-red: #ff3333;
+            --neon-blue: #00ccff;
+            --bg-dark: rgba(10, 12, 16, 0.95);
+            --card-bg: rgba(20, 20, 20, 0.9);
+            --border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.92)),
+                url('https://image2url.com/r2/default/images/1770034706543-5638dc0b-1a1c-4fbb-9397-9cea79352b22.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--neon-red);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .brand-section h1 {
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            font-size: 2rem;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .status-center { display: flex; gap: 10px; }
+        .status-box {
+            background: #111;
+            border: 1px solid #333;
+            padding: 5px 15px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .status-title { font-size: 0.6rem; color: #666; letter-spacing: 1px; }
+        .status-val { font-size: 0.7rem; color: #888; font-weight: bold; margin-top: 2px; }
+
+        /* BUTTONS */
+        .top-controls { display: flex; gap: 10px; align-items: center; }
+        .ctrl-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 20px;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ctrl-btn:hover { border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+        .ctrl-btn:active { transform: scale(0.98); }
+
+        /* REC DOT ANIMATION */
+        .rec-dot { height:8px; width:8px; background:#555; border-radius:50%; display:inline-block; transition: all 0.3s; }
+        .recording .rec-dot {
+            background: var(--neon-red);
+            box-shadow: 0 0 8px var(--neon-red);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* LAYOUT */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        /* GAUGE & CHARTS */
+        .gauge-container {
+            grid-column: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--card-bg);
+            border: var(--border);
+            border-top: 3px solid var(--neon-green);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        #digitalMeter {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .digi-rpm-val { font-family: 'Orbitron'; font-size: 5rem; font-weight: 700; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+        .digi-rpm-label { font-size: 1rem; color: #888; letter-spacing: 2px; margin-bottom: 20px; }
+        .rpm-bar-bg { width: 80%; height: 20px; background: #333; border-radius: 10px; overflow: hidden; border: 1px solid #555; }
+        .rpm-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-green), var(--neon-red)); transition: width 0.1s linear; }
+
+        .toggle-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: transparent; border: 1px solid #555; color: #aaa;
+            font-family: 'Roboto Mono'; font-size: 0.7rem; cursor: pointer;
+            padding: 5px 10px; border-radius: 4px; z-index: 10;
+        }
+
+        .chart-card {
+            background: var(--card-bg); border: var(--border);
+            padding: 10px; border-radius: 6px; display: flex; flex-direction: column;
+        }
+        .chart-card h3 { margin: 0 0 10px 0; font-family: 'Orbitron'; font-size: 0.9rem; color: var(--neon-blue); }
+
+        /* DATA GRID */
+        .telemetry-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .data-box { background: rgba(30, 30, 30, 0.8); border: 1px solid #333; padding: 10px; border-radius: 4px; transition: all 0.2s; }
+        .data-box:hover { border-color: var(--neon-green); background: rgba(50, 50, 50, 0.9); }
+        .data-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        .data-value { font-family: 'Orbitron'; font-size: 1.2rem; margin-top: 5px; }
+        .unit { font-size: 0.7rem; color: #555; margin-left: 2px; }
+
+        .txt-red { color: var(--neon-red); }
+        .txt-green { color: var(--neon-green); }
+        .txt-blue { color: var(--neon-blue); }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-section">
+            <h1>FERN <span style="color:var(--neon-red)">RACING</span></h1>
+            <div style="font-size: 0.7rem; letter-spacing: 2px; opacity: 0.7;">TELEMETRY SYSTEM PRO</div>
+        </div>
+
+        <div class="status-center">
+            <div class="status-box">
+                <div class="status-title">BROKER</div>
+                <div class="status-val" id="connection-status">WAIT...</div>
+            </div>
+            <div class="status-box">
+                <div class="status-title">CAR LINK</div>
+                <div class="status-val">NO DATA</div>
+            </div>
+        </div>
+
+        <div class="top-controls">
+            <button class="ctrl-btn" onclick="toggleFullScreen()"><i style="font-style:normal">📱</i> VIEW</button>
+            <button class="ctrl-btn" id="btn-rec" onclick="toggleRecord()"><span class="rec-dot"></span> REC</button>
+            <button class="ctrl-btn" id="btn-save" onclick="downloadCSV()">SAVE (0)</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="chart-card">
+            <h3>ELECTRICAL</h3>
+            <div style="flex-grow:1; position: relative;">
+                <canvas id="currentChart"></canvas>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.8rem">
+                <span>VOLTS: <span id="disp_volt" class="txt-blue">0.0</span></span>
+                <span>SOC: <span id="disp_soc" class="txt-green">0</span>%</span>
+            </div>
+        </div>
+
+        <div class="gauge-container">
+            <button class="toggle-btn" onclick="toggleGaugeMode()">MODE</button>
+            <canvas id="rpmGauge"></canvas>
+            <div id="digitalMeter">
+                <div class="digi-rpm-val" id="d_rpm">0</div>
+                <div class="digi-rpm-label">MOTOR RPM</div>
+                <div class="rpm-bar-bg">
+                    <div class="rpm-bar-fill" id="d_rpm_bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h3>TORQUE MAP</h3>
+            <div style="flex-grow:1; position: relative;">
+                <canvas id="torqueChart"></canvas>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.8rem">
+                <span>CMD: <span id="disp_cmd" class="txt-blue">0</span></span>
+                <span>ACT: <span id="disp_act" class="txt-green">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <h3 style="font-family:'Orbitron'; color:#666; border-bottom:1px solid #333; padding-bottom:5px;">LIVE DATA STREAM</h3>
+    
+    <div class="telemetry-grid" id="grid-container">
+        <div class="data-box"><div class="data-label">01. RPM</div><div class="data-value" id="p_0">0</div></div>
+        <div class="data-box"><div class="data-label">02. VOLTAGE</div><div class="data-value txt-blue" id="p_1">0.0<span class="unit">V</span></div></div>
+        <div class="data-box"><div class="data-label">03. CURRENT</div><div class="data-value txt-blue" id="p_2">0.0<span class="unit">A</span></div></div>
+        <div class="data-box"><div class="data-label">04. MOT TEMP</div><div class="data-value txt-red" id="p_3">0.0<span class="unit">°C</span></div></div>
+        <div class="data-box"><div class="data-label">05. COOL TEMP</div><div class="data-value txt-red" id="p_4">0.0<span class="unit">°C</span></div></div>
+        <div class="data-box"><div class="data-label">06. HOT SPOT</div><div class="data-value txt-red" id="p_5">0.0<span class="unit">°C</span></div></div>
+        <div class="data-box"><div class="data-label">07. CMD TORQ</div><div class="data-value" id="p_6">0</div></div>
+        <div class="data-box"><div class="data-label">08. ACT TORQ</div><div class="data-value txt-green" id="p_7">0</div></div>
+        <div class="data-box"><div class="data-label">09. MOD A</div><div class="data-value" id="p_8">0.0</div></div>
+        <div class="data-box"><div class="data-label">10. MOD B</div><div class="data-value" id="p_9">0.0</div></div>
+        <div class="data-box"><div class="data-label">11. MOD C</div><div class="data-value" id="p_10">0.0</div></div>
+        <div class="data-box"><div class="data-label">12. BMS AMPS</div><div class="data-value" id="p_11">0.0</div></div>
+        <div class="data-box"><div class="data-label">13. BMS VOLTS</div><div class="data-value" id="p_12">0.0</div></div>
+        <div class="data-box"><div class="data-label">14. BMS SOC</div><div class="data-value txt-green" id="p_13">0<span class="unit">%</span></div></div>
+        <div class="data-box"><div class="data-label">15. BMS TEMP</div><div class="data-value" id="p_14">0.0</div></div>
+        <div class="data-box"><div class="data-label">16. LOW CELL</div><div class="data-value" id="p_15">0.0</div></div>
+        <div class="data-box"><div class="data-label">17. CELL DELTA</div><div class="data-value" id="p_missing">--</div></div>
+        <div class="data-box"><div class="data-label">18. HIGH CELL</div><div class="data-value" id="p_16">0.0</div></div>
+    </div>
+
+    <script>
+        // --- DATA LOGGING VARIABLES ---
+        let isRecording = false;
+        let recordedData = [];
+
+        // --- BUTTON FUNCTIONS ---
+
+        // 1. Fullscreen View
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 2. Record Toggle
+        function toggleRecord() {
+            isRecording = !isRecording;
+            const btn = document.getElementById('btn-rec');
+            
+            if(isRecording) {
+                btn.classList.add('recording'); // Makes dot RED
+                // Reset data if starting new? Optional. We'll append for now.
+                console.log("Recording Started");
+            } else {
+                btn.classList.remove('recording');
+                console.log("Recording Stopped");
+            }
+        }
+
+        // 3. Save CSV
+        function downloadCSV() {
+            if(recordedData.length === 0) {
+                alert("No data recorded yet!");
+                return;
+            }
+
+            // Define Headers
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Timestamp,RPM,Voltage,Current,Mot_Temp,Cool_Temp,HotSpot,Cmd_Torq,Act_Torq,ModA,ModB,ModC,BMS_Amps,BMS_Volts,SOC,BMS_Temp,Low_Cell,High_Cell\n";
+
+            // Add Data Rows
+            recordedData.forEach(row => {
+                csvContent += row.join(",") + "\n";
+            });
+
+            // Create Download Link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "fern_telemetry_" + new Date().getTime() + ".csv");
+            document.body.appendChild(link); // Required for FF
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- GAUGE LOGIC ---
+        let isDigital = false;
+        function toggleGaugeMode() {
+            isDigital = !isDigital;
+            const analog = document.getElementById('rpmGauge');
+            const digital = document.getElementById('digitalMeter');
+            if(isDigital) { analog.style.display = 'none'; digital.style.display = 'flex'; }
+            else { analog.style.display = 'block'; digital.style.display = 'none'; }
+        }
+
+        var gauge = new RadialGauge({
+            renderTo: 'rpmGauge', width: 300, height: 300, units: "RPM",
+            minValue: 0, maxValue: 5000,
+            majorTicks: ["0","1000","2000","3000","4000","5000"],
+            minorTicks: 2, strokeTicks: true,
+            highlights: [{ from: 4000, to: 5000, color: "rgba(200, 50, 50, .75)" }],
+            colorPlate: "#222", colorMajorTicks: "#f5f5f5", colorMinorTicks: "#ddd",
+            colorTitle: "#fff", colorUnits: "#ccc", colorNumbers: "#eee",
+            colorNeedle: "rgba(240, 128, 128, 1)", colorNeedleEnd: "rgba(255, 160, 122, .9)",
+            valueBox: true, animationRule: "linear"
+        }).draw();
+
+        // --- CHART SETUP ---
+        Chart.defaults.color = '#666';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+        const commonOptions = {
+            responsive: true, maintainAspectRatio: false, animation: false, 
+            plugins: { legend: { display: true, labels: { color: 'white' } } },
+            scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.1)' } } }
+        };
+
+        const ctxCurrent = document.getElementById('currentChart').getContext('2d');
+        const currentChart = new Chart(ctxCurrent, {
+            type: 'line',
+            data: { labels: Array(50).fill(''), datasets: [{ label: 'Current (A)', data: Array(50).fill(0), borderColor: '#00ccff', borderWidth: 2, pointRadius: 0, tension: 0.4 }] },
+            options: commonOptions
+        });
+
+        const ctxTorque = document.getElementById('torqueChart').getContext('2d');
+        const torqueChart = new Chart(ctxTorque, {
+            type: 'line',
+            data: { labels: Array(50).fill(''), datasets: [{ label: 'Cmd', data: Array(50).fill(0), borderColor: '#888', borderWidth: 1, pointRadius: 0 }, { label: 'Act', data: Array(50).fill(0), borderColor: '#00ff88', borderWidth: 2, pointRadius: 0 }] },
+            options: commonOptions
+        });
+
+        // --- MQTT SETUP ---
+        const broker = "f067955386ee4b548b865ce61b321b82.s1.eu.hivemq.cloud"; 
+        const port = 8884; 
+        const topic = "fern/telemetry";
+        const clientID = "f1_dash_" + new Date().getTime();
+        const client = new Paho.MQTT.Client(broker, port, clientID);
+
+        client.onConnectionLost = (resp) => {
+            document.getElementById("connection-status").innerText = "LOST";
+            document.getElementById("connection-status").style.color = "red";
+        };
+
+        client.onMessageArrived = (message) => {
+            const raw = message.payloadString;
+            try {
+                let cleanData = raw.replace("/*", "").replace("*/", "");
+                let v = cleanData.split(","); 
+                
+                // 1. ABSOLUTE VALUE PROCESSING
+                if(v[0]) v[0] = Math.abs(parseInt(v[0])); 
+                if(v[2]) v[2] = Math.abs(parseFloat(v[2])).toFixed(1); 
+                if(v[6]) v[6] = Math.abs(parseFloat(v[6])); 
+                if(v[7]) v[7] = Math.abs(parseFloat(v[7])); 
+                if(v[11]) v[11] = Math.abs(parseFloat(v[11]));
+                [3, 4, 5, 8, 9, 10, 14].forEach(i => { if(v[i]) v[i] = Math.abs(parseFloat(v[i])).toFixed(1); });
+
+                // --- RECORDING LOGIC (NEW) ---
+                if(isRecording) {
+                    // Create a row with Timestamp + Data
+                    let row = [new Date().toLocaleTimeString(), ...v];
+                    recordedData.push(row);
+                    // Update Button Text
+                    document.getElementById('btn-save').innerText = "SAVE (" + recordedData.length + ")";
+                }
+
+                // 2. UPDATE VISUALS
+                let rpmVal = v[0];
+                gauge.value = rpmVal;
+                document.getElementById("d_rpm").innerText = rpmVal;
+                let pct = (rpmVal / 5000) * 100; if(pct > 100) pct = 100;
+                document.getElementById("d_rpm_bar").style.width = pct + "%";
+                const barFill = document.getElementById("d_rpm_bar");
+                if(rpmVal > 4000) barFill.style.background = "var(--neon-red)";
+                else barFill.style.background = "linear-gradient(90deg, var(--neon-blue), var(--neon-green))";
+
+                currentChart.data.datasets[0].data.push(v[2]);
+                currentChart.data.datasets[0].data.shift();
+                currentChart.update();
+
+                torqueChart.data.datasets[0].data.push(v[6]);
+                torqueChart.data.datasets[1].data.push(v[7]);
+                torqueChart.data.datasets[0].data.shift();
+                torqueChart.data.datasets[1].data.shift();
+                torqueChart.update();
+
+                for(let i=0; i<17; i++) {
+                    let el = document.getElementById("p_" + i);
+                    if(el && v[i]) el.innerText = v[i];
+                }
+                if(v[16]) document.getElementById("p_16").innerText = v[16];
+
+                if(v[15] && v[16]) {
+                    let delta = Math.abs(parseFloat(v[16]) - parseFloat(v[15])).toFixed(3);
+                    let elMissing = document.getElementById("p_missing");
+                    if(elMissing) { elMissing.innerText = delta; elMissing.style.color = "#aaa"; }
+                }
+
+                document.getElementById("disp_volt").innerText = v[1]; 
+                document.getElementById("disp_soc").innerText = v[13]; 
+                document.getElementById("disp_cmd").innerText = v[6];  
+                document.getElementById("disp_act").innerText = v[7];  
+
+            } catch (e) { console.error("Parse Error", e); }
+        };
+
+        const connectOptions = {
+            onSuccess: () => {
+                document.getElementById("connection-status").innerText = "CONNECTED";
+                document.getElementById("connection-status").style.color = "#00ff88";
+                client.subscribe(topic);
+            },
+            onFailure: (e) => {
+                document.getElementById("connection-status").innerText = "FAILED";
+                console.log(e);
+            },
+            userName: "FERN_Telemetry", password: "Pakistan123", useSSL: true
+        };
+
+        client.connect(connectOptions);
+    </script>
+</body>
+</html>
