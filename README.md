@@ -6,7 +6,6 @@
 
 # 🏎️⚡ FERN EV Powertrain Telemetry System | Engineering Showcase
 
-![FERN Logo](Untitled.jpg)
 
 **A high-performance, real-time CAN bus telemetry and data acquisition system designed for the FERN Formula Student Electric Vehicle.** > **⚠️ Portfolio Notice:** *This repository serves as a technical showcase and portfolio piece. The ESP32 firmware (`.ino`) is uniquely hardcoded to parse the specific CAN bus matrices of our vehicle's Cascadia Motion Controller and Orion BMS. It is not intended as a plug-and-play library, but rather as a demonstration of embedded systems programming, IoT architecture, and full-stack telemetry design.*
 
