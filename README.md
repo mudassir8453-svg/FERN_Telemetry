@@ -1,11 +1,7 @@
 <img width="1916" height="877" alt="image" src="https://github.com/user-attachments/assets/d97f8b21-a576-4368-be9c-4018df076aa2" />
 
 
-
-
-
 # 🏎️⚡ FERN EV Powertrain Telemetry System | Engineering Showcase
-
 
 **A high-performance, real-time CAN bus telemetry and data acquisition system designed for the FERN Formula Student Electric Vehicle.** > **⚠️ Portfolio Notice:** *This repository serves as a technical showcase and portfolio piece. The ESP32 firmware (`.ino`) is uniquely hardcoded to parse the specific CAN bus matrices of our vehicle's Cascadia Motion Controller and Orion BMS. It is not intended as a plug-and-play library, but rather as a demonstration of embedded systems programming, IoT architecture, and full-stack telemetry design.*
 
@@ -58,6 +54,14 @@ The web dashboard decodes the telemetry string in real-time, calculating live me
 * **Protocols:** CAN Bus 2.0B, I2C, MQTT, WebSockets.
 * **Hardware:** ESP32, Embedded Systems, Multi-display rendering.
 * **Concepts:** Real-Time Operating Systems (FreeRTOS), Data Acquisition (DAQ), Bitwise Operations, Cybersecurity (Role-Based Access Control).
+
+---
+
+## 🌐 Live Dashboard Demo
+
+Experience the pit-wall interface firsthand. *(Note: The UI will display "OFFLINE" and zeroed values unless the vehicle is currently powered on and actively broadcasting to the secure broker).*
+
+👉 **[Click Here to View the Live Telemetry Dashboard](https://mudassir8453-svg.github.io/FERN_Telemetry/)**
 
 ---
 *Designed and engineered for FERN Racing.*
