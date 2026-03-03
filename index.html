@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FERN EV | Powertrain Telemetry</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/radial/gauge.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --neon-green: #00ff88;
+            --neon-red: #ff3333;
+            --neon-blue: #00ccff;
+            --dark-blue: #1E90FF;
+            --bg-pure: #000000;
+            --card-bg: #0a0a0a;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--bg-pure);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #222;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .brand-section { display: flex; align-items: center; gap: 20px; }
+        
+        /* NEW LOGO BADGE STYLE */
+        .logo-badge {
+            background-color: #fff;
+            padding: 5px 15px;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-img { 
+            height: 55px; 
+            width: auto; 
+            display: block;
+        }
+        
+        .brand-section h1 { font-family: 'Orbitron', sans-serif; margin: 0; font-size: 1.8rem; letter-spacing: 2px; }
+
+        .status-center { display: flex; gap: 15px; }
+        .status-box { background: #080808; border: 1px solid #1a1a1a; padding: 8px 18px; text-align: center; border-radius: 2px; min-width: 110px; }
+        .status-title { font-size: 0.6rem; color: #444; letter-spacing: 2px; text-transform: uppercase; }
+        .status-val { font-size: 0.75rem; color: #777; font-weight: bold; margin-top: 4px; }
+
+        .ctrl-btn { background: #111; border: 1px solid #222; color: #eee; padding: 10px 22px; font-family: 'Orbitron'; font-size: 0.75rem; border-radius: 2px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px; }
+        .ctrl-btn:hover { border-color: var(--neon-green); color: var(--neon-green); }
+        .recording .rec-dot { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); animation: pulse 1s infinite; }
+        .rec-dot { height:10px; width:10px; background:#333; border-radius:50%; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .main-container { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 25px; height: 350px; margin-bottom: 30px; }
+        .gauge-container { display: flex; justify-content: center; align-items: center; background: #050505; border: 1px solid #111; border-radius: 50%; box-shadow: inset 0 0 50px rgba(0,0,0,1); }
+        .chart-card { background: var(--card-bg); border: 1px solid #111; padding: 15px; border-radius: 4px; display: flex; flex-direction: column; }
+        .chart-card h3 { margin: 0 0 15px 0; font-family: 'Orbitron'; font-size: 0.8rem; color: #444; letter-spacing: 2px; text-transform: uppercase; }
+
+        .telemetry-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
+        .data-box { background: #080808; border: 1px solid #111; padding: 15px; border-radius: 2px; border-left: 3px solid #222; transition: 0.2s; }
+        .data-box:hover { border-color: #333; background: #0c0c0c; }
+        .data-label { font-size: 0.6rem; color: #444; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+        .data-value { font-family: 'Orbitron'; font-size: 1.4rem; color: #fff; }
+        .unit { font-size: 0.7rem; color: #333; margin-left: 5px; font-family: 'Roboto Mono'; }
+        .id-label { font-size: 0.65rem; color: #666; margin-left: 5px; font-family: 'Roboto Mono'; }
+
+        .border-blue { border-left-color: var(--neon-blue); }
+        .border-green { border-left-color: var(--neon-green); }
+        .border-red { border-left-color: var(--neon-red); }
+        .txt-red { color: var(--neon-red) !important; }
+        .txt-green { color: var(--neon-green) !important; }
+        .txt-blue { color: var(--neon-blue) !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-section">
+            <div class="logo-badge">
+                <img src="Untitled.jpg" class="logo-img" alt="FERN Logo">
+            </div>
+            <div>
+                <h1>FERN <span style="color:var(--neon-red)">EV</span></h1>
+                <div style="font-size: 0.6rem; letter-spacing: 3px; color: #444;">POWERTRAIN TELEMETRY SYSTEM</div>
+            </div>
+        </div>
+
+        <div class="status-center">
+            <div class="status-box"><div class="status-title">MQTT</div><div class="status-val" id="conn-mqtt">OFFLINE</div></div>
+            <div class="status-box"><div class="status-title">CAN BUS</div><div class="status-val" id="conn-can">WAITING</div></div>
+        </div>
+
+        <div class="top-controls">
+            <button class="ctrl-btn" id="btn-rec" onclick="toggleRecord()"><span class="rec-dot"></span> RECORD</button>
+            <button class="ctrl-btn" id="btn-save" onclick="downloadCSV()">SAVE LOG</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="chart-card">
+            <h3>DC BUS CURRENT</h3>
+            <div style="flex-grow:1; position: relative;"><canvas id="currChart"></canvas></div>
+        </div>
+
+        <div class="gauge-container">
+            <canvas id="rpmGauge"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3>TORQUE MAP</h3>
+            <div style="flex-grow:1; position: relative;"><canvas id="torqueChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="telemetry-grid">
+        <div class="data-box border-green"><div class="data-label">Pack Voltage</div><div class="data-value"><span id="v_12">0.0</span><span class="unit">V</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Pack SOC</div><div class="data-value txt-green"><span id="v_13">0.0</span><span class="unit">%</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Cell Delta</div><div class="data-value"><span id="v_delta">0.000</span><span class="unit">V</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Lowest Cell</div><div class="data-value"><span id="v_15">0.000</span><span class="unit">V</span> <span class="id-label">(ID: <span id="v_16">0</span>)</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Highest Cell</div><div class="data-value"><span id="v_17">0.000</span><span class="unit">V</span> <span class="id-label">(ID: <span id="v_18">0</span>)</span></div></div>
+        <div class="data-box border-green"><div class="data-label">BMS Temp</div><div class="data-value"><span id="v_14">0</span><span class="unit">°C</span></div></div>
+
+        <div class="data-box border-red"><div class="data-label">Motor Temp</div><div class="data-value txt-red"><span id="v_3">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-red"><div class="data-label">Hot Spot</div><div class="data-value"><span id="v_5">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-red"><div class="data-label">Coolant Temp</div><div class="data-value"><span id="v_4">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-blue"><div class="data-label">Mod A Temp</div><div class="data-value"><span id="v_8">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-blue"><div class="data-label">Mod B Temp</div><div class="data-value"><span id="v_9">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-blue"><div class="data-label">Mod C Temp</div><div class="data-value"><span id="v_10">0.0</span><span class="unit">°C</span></div></div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let recordedData = [];
+        let lastMsgTime = 0;
+
+        function toggleRecord() {
+            isRecording = !isRecording;
+            document.getElementById('btn-rec').classList.toggle('recording', isRecording);
+        }
+
+        function downloadCSV() {
+            if(recordedData.length === 0) return alert("No data recorded!");
+            let csv = "Timestamp,RPM,Volt,Curr,MotTemp,CoolTemp,HotSpot,CmdT,ActT,ModA,ModB,ModC,BmsA,BmsV,SOC,BmsT,LowV,LowID,HighV,HighID\n";
+            recordedData.forEach(row => csv += row.join(",") + "\n");
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url); a.setAttribute('download', `FERN_TELEMETRY_LOG_${Date.now()}.csv`);
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        // --- GAUGE AUTO-SIZE FIX ---
+        const gauge = new RadialGauge({
+            renderTo: 'rpmGauge',
+            width: 350,
+            height: 350,
+            units: "RPM",
+            minValue: 0,
+            maxValue: 6000,
+            majorTicks: ["0","1000","2000","3000","4000","5000","6000"],
+            minorTicks: 5,
+            strokeTicks: true,
+            highlights: [{ from: 5000, to: 6000, color: "rgba(255, 0, 0, .3)" }],
+            colorPlate: "#050505",
+            colorMajorTicks: "#444",
+            colorMinorTicks: "#222",
+            colorNumbers: "#888",
+            colorUnits: "#444",
+            colorTitle: "#666",
+            colorNeedle: "#ff0000",
+            colorNeedleEnd: "#660000",
+            valueBox: true,
+            valueInt: 1,
+            valueDec: 0,
+            fontValueSize: 32,
+            colorValueBoxRect: "#111",
+            colorValueBoxRectEnd: "#111",
+            colorValueBoxBackground: "#111",
+            colorValueText: "#fff",
+            highlightsWidth: 15,
+            needleType: "arrow",
+            needleWidth: 2,
+            needleCircleSize: 7,
+            needleCircleOuter: true,
+            needleCircleInner: false,
+            animationDuration: 100,
+            animationRule: "linear"
+        }).draw();
+
+        // --- CHARTS ---
+        const cChart = new Chart(document.getElementById('currChart').getContext('2d'), {
+            type: 'line', data: { labels: Array(40).fill(''), datasets: [{ label: 'DC Amps', data: Array(40).fill(0), borderColor: '#00ccff', borderWidth: 2, pointRadius: 0, tension: 0.4 }] },
+            options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#111' } } } }
+        });
+
+        const tChart = new Chart(document.getElementById('torqueChart').getContext('2d'), {
+            type: 'line', 
+            data: { 
+                labels: Array(40).fill(''), 
+                datasets: [
+                    { label: 'Cmd Torque', data: Array(40).fill(0), borderColor: '#1E90FF', borderWidth: 2, pointRadius: 0, tension: 0.4 }, 
+                    { label: 'Act Torque', data: Array(40).fill(0), borderColor: '#ff3333', borderWidth: 2, pointRadius: 0, tension: 0.4 }  
+                ] 
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, animation: false, 
+                plugins: { legend: { display: true, labels: { color: '#888', font: { family: 'Orbitron', size: 10 } } } }, 
+                scales: { x: { display: false }, y: { grid: { color: '#111' } } } 
+            }
+        });
+
+        // --- SECURE MQTT SETUP ---
+        const client = new Paho.MQTT.Client("f067955386ee4b548b865ce61b321b82.s1.eu.hivemq.cloud", 8884, "f1_pro_dash_" + Math.random());
+        
+        client.onMessageArrived = (msg) => {
+            lastMsgTime = Date.now();
+            document.getElementById("conn-can").innerText = "DATA LIVE";
+            document.getElementById("conn-can").style.color = "#00ff88";
+
+            try {
+                let data = msg.payloadString.replace("/*", "").replace("*/", "").split(",");
+                if(data.length < 15) return;
+
+                const updateIds = [3, 4, 5, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18];
+                updateIds.forEach(i => {
+                    let el = document.getElementById("v_" + i);
+                    if(el && data[i] !== undefined) el.innerText = data[i];
+                });
+
+                let low = parseFloat(data[15]);
+                let high = parseFloat(data[17]);
+                let delta = Math.abs(high - low).toFixed(3);
+                document.getElementById("v_delta").innerText = delta;
+                if(delta > 0.2) document.getElementById("v_delta").parentElement.classList.add("txt-red");
+                else document.getElementById("v_delta").parentElement.classList.remove("txt-red");
+
+                gauge.value = data[0];
+
+                cChart.data.datasets[0].data.push(data[2]); 
+                cChart.data.datasets[0].data.shift(); 
+                cChart.update();
+
+                tChart.data.datasets[0].data.push(data[6]); 
+                tChart.data.datasets[1].data.push(data[7]); 
+                tChart.data.datasets[0].data.shift(); 
+                tChart.data.datasets[1].data.shift(); 
+                tChart.update();
+
+                if(isRecording) {
+                    recordedData.push([new Date().toLocaleTimeString(), ...data]);
+                }
+            } catch(e) {}
+        };
+
+        client.connect({
+            onSuccess: () => { 
+                document.getElementById("conn-mqtt").innerText = "CONNECTED"; 
+                document.getElementById("conn-mqtt").style.color = "#00ff88";
+                client.subscribe("fern/telemetry"); 
+            },
+            userName: "Public", 
+            password: "Viewers2026", 
+            useSSL: true
+        });
+
+        setInterval(() => {
+            if(Date.now() - lastMsgTime > 2500) {
+                document.getElementById("conn-can").innerText = "OFFLINE";
+                document.getElementById("conn-can").style.color = "#ff3333";
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
