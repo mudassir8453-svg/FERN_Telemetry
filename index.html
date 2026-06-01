@@ -15,6 +15,7 @@
             --neon-green: #00ff88;
             --neon-red: #ff3333;
             --neon-blue: #00ccff;
+            --neon-yellow: #ffcc00;
             --dark-blue: #1E90FF;
             --bg-pure: #000000;
             --card-bg: #0a0a0a;
@@ -40,7 +41,6 @@
         
         .brand-section { display: flex; align-items: center; gap: 20px; }
         
-        /* NEW LOGO BADGE STYLE */
         .logo-badge {
             background-color: #fff;
             padding: 5px 15px;
@@ -86,6 +86,8 @@
         .border-blue { border-left-color: var(--neon-blue); }
         .border-green { border-left-color: var(--neon-green); }
         .border-red { border-left-color: var(--neon-red); }
+        .border-yellow { border-left-color: var(--neon-yellow); }
+        
         .txt-red { color: var(--neon-red) !important; }
         .txt-green { color: var(--neon-green) !important; }
         .txt-blue { color: var(--neon-blue) !important; }
@@ -96,7 +98,7 @@
     <header>
         <div class="brand-section">
             <div class="logo-badge">
-                <img src="Untitled.jpg" class="logo-img" alt="FERN Logo">
+                <img src="Untitled.jpg" class="logo-img" alt="FERN Logo"> 
             </div>
             <div>
                 <h1>FERN <span style="color:var(--neon-red)">EV</span></h1>
@@ -132,19 +134,26 @@
     </div>
 
     <div class="telemetry-grid">
-        <div class="data-box border-green"><div class="data-label">Pack Voltage</div><div class="data-value"><span id="v_12">0.0</span><span class="unit">V</span></div></div>
-        <div class="data-box border-green"><div class="data-label">Pack SOC</div><div class="data-value txt-green"><span id="v_13">0.0</span><span class="unit">%</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Pack Voltage</div><div class="data-value"><span id="v_packV">0.0</span><span class="unit">V</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Pack SOC</div><div class="data-value txt-green"><span id="v_soc">0.0</span><span class="unit">%</span></div></div>
         <div class="data-box border-green"><div class="data-label">Cell Delta</div><div class="data-value"><span id="v_delta">0.000</span><span class="unit">V</span></div></div>
-        <div class="data-box border-green"><div class="data-label">Lowest Cell</div><div class="data-value"><span id="v_15">0.000</span><span class="unit">V</span> <span class="id-label">(ID: <span id="v_16">0</span>)</span></div></div>
-        <div class="data-box border-green"><div class="data-label">Highest Cell</div><div class="data-value"><span id="v_17">0.000</span><span class="unit">V</span> <span class="id-label">(ID: <span id="v_18">0</span>)</span></div></div>
-        <div class="data-box border-green"><div class="data-label">BMS Temp</div><div class="data-value"><span id="v_14">0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Lowest Cell</div><div class="data-value"><span id="v_lowCellV">0.000</span><span class="unit">V</span> <span class="id-label">(ID: <span id="v_lowCellID">0</span>)</span></div></div>
+        <div class="data-box border-green"><div class="data-label">Highest Cell</div><div class="data-value"><span id="v_highCellV">0.000</span><span class="unit">V</span> <span class="id-label">(ID: <span id="v_highCellID">0</span>)</span></div></div>
+        <div class="data-box border-green"><div class="data-label">BMS Temp</div><div class="data-value"><span id="v_bmsTemp">0</span><span class="unit">°C</span></div></div>
 
-        <div class="data-box border-red"><div class="data-label">Motor Temp</div><div class="data-value txt-red"><span id="v_3">0.0</span><span class="unit">°C</span></div></div>
-        <div class="data-box border-red"><div class="data-label">Hot Spot</div><div class="data-value"><span id="v_5">0.0</span><span class="unit">°C</span></div></div>
-        <div class="data-box border-red"><div class="data-label">Coolant Temp</div><div class="data-value"><span id="v_4">0.0</span><span class="unit">°C</span></div></div>
-        <div class="data-box border-blue"><div class="data-label">Mod A Temp</div><div class="data-value"><span id="v_8">0.0</span><span class="unit">°C</span></div></div>
-        <div class="data-box border-blue"><div class="data-label">Mod B Temp</div><div class="data-value"><span id="v_9">0.0</span><span class="unit">°C</span></div></div>
-        <div class="data-box border-blue"><div class="data-label">Mod C Temp</div><div class="data-value"><span id="v_10">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-red"><div class="data-label">Motor Temp</div><div class="data-value txt-red"><span id="v_motorTemp">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-red"><div class="data-label">Hot Spot</div><div class="data-value"><span id="v_hotSpot">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-red"><div class="data-label">Coolant Temp</div><div class="data-value"><span id="v_coolant">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-blue"><div class="data-label">Mod A Temp</div><div class="data-value"><span id="v_modA">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-blue"><div class="data-label">Mod B Temp</div><div class="data-value"><span id="v_modB">0.0</span><span class="unit">°C</span></div></div>
+        <div class="data-box border-blue"><div class="data-label">Mod C Temp</div><div class="data-value"><span id="v_modC">0.0</span><span class="unit">°C</span></div></div>
+
+        <div class="data-box border-yellow"><div class="data-label">Tyre RPM</div><div class="data-value"><span id="v_tyreRpm">0</span><span class="unit">RPM</span></div></div>
+        <div class="data-box border-yellow"><div class="data-label">Motor Voltage</div><div class="data-value"><span id="v_motorV">0.0</span><span class="unit">V</span></div></div>
+        <div class="data-box border-yellow"><div class="data-label">Pack Current</div><div class="data-value"><span id="v_packA">0.0</span><span class="unit">A</span></div></div>
+        <div class="data-box border-yellow"><div class="data-label">Motor Current</div><div class="data-value"><span id="v_motorA">0.0</span><span class="unit">A</span></div></div>
+        <div class="data-box border-yellow"><div class="data-label">Cmd Torque</div><div class="data-value"><span id="v_cmdT">0.0</span><span class="unit">Nm</span></div></div>
+        <div class="data-box border-yellow"><div class="data-label">Act Torque</div><div class="data-value"><span id="v_actT">0.0</span><span class="unit">Nm</span></div></div>
     </div>
 
     <script>
@@ -159,7 +168,8 @@
 
         function downloadCSV() {
             if(recordedData.length === 0) return alert("No data recorded!");
-            let csv = "Timestamp,RPM,Volt,Curr,MotTemp,CoolTemp,HotSpot,CmdT,ActT,ModA,ModB,ModC,BmsA,BmsV,SOC,BmsT,LowV,LowID,HighV,HighID\n";
+            // Exact header mapping matching the 20-variable C++ Payload
+            let csv = "Timestamp,Motor_RPM,Tyre_RPM,Motor_V,Motor_A,Motor_Temp,Coolant_Temp,Hot_Spot,Cmd_Torque,Act_Torque,ModA_Temp,ModB_Temp,ModC_Temp,Pack_Current,Pack_Voltage,SOC,BMS_Temp,Low_Cell_V,Low_Cell_ID,High_Cell_V,High_Cell_ID\n";
             recordedData.forEach(row => csv += row.join(",") + "\n");
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
@@ -168,12 +178,11 @@
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
-        // --- GAUGE AUTO-SIZE FIX ---
         const gauge = new RadialGauge({
             renderTo: 'rpmGauge',
             width: 350,
             height: 350,
-            units: "RPM",
+            units: "M-RPM",
             minValue: 0,
             maxValue: 6000,
             majorTicks: ["0","1000","2000","3000","4000","5000","6000"],
@@ -206,7 +215,6 @@
             animationRule: "linear"
         }).draw();
 
-        // --- CHARTS ---
         const cChart = new Chart(document.getElementById('currChart').getContext('2d'), {
             type: 'line', data: { labels: Array(40).fill(''), datasets: [{ label: 'DC Amps', data: Array(40).fill(0), borderColor: '#00ccff', borderWidth: 2, pointRadius: 0, tension: 0.4 }] },
             options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#111' } } } }
@@ -228,7 +236,6 @@
             }
         });
 
-        // --- SECURE MQTT SETUP ---
         const client = new Paho.MQTT.Client("f067955386ee4b548b865ce61b321b82.s1.eu.hivemq.cloud", 8884, "f1_pro_dash_" + Math.random());
         
         client.onMessageArrived = (msg) => {
@@ -238,37 +245,66 @@
 
             try {
                 let data = msg.payloadString.replace("/*", "").replace("*/", "").split(",");
-                if(data.length < 15) return;
+                if(data.length < 20) return;
 
-                const updateIds = [3, 4, 5, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18];
-                updateIds.forEach(i => {
-                    let el = document.getElementById("v_" + i);
-                    if(el && data[i] !== undefined) el.innerText = data[i];
-                });
+                /* C++ Array Index Mapping:
+                   0: M-RPM, 1: T-RPM, 2: M-V, 3: M-A, 4: M-Temp, 5: Coolant, 6: HotSpot, 7: CmdT, 8: ActT, 
+                   9: ModA, 10: ModB, 11: ModC, 12: PackA, 13: PackV, 14: SOC, 15: BmsTemp, 
+                   16: LowV, 17: LowID, 18: HighV, 19: HighID 
+                */
 
-                let low = parseFloat(data[15]);
-                let high = parseFloat(data[17]);
-                let delta = Math.abs(high - low).toFixed(3);
+                // Dashboard Elements mapping
+                document.getElementById("v_packV").innerText = parseFloat(data[13]).toFixed(1);
+                document.getElementById("v_soc").innerText = parseFloat(data[14]).toFixed(1);
+                document.getElementById("v_bmsTemp").innerText = data[15];
+                
+                let lowV = parseFloat(data[16]);
+                let highV = parseFloat(data[18]);
+                document.getElementById("v_lowCellV").innerText = lowV.toFixed(4);
+                document.getElementById("v_lowCellID").innerText = data[17];
+                document.getElementById("v_highCellV").innerText = highV.toFixed(4);
+                document.getElementById("v_highCellID").innerText = data[19];
+                
+                let delta = Math.abs(highV - lowV).toFixed(3);
                 document.getElementById("v_delta").innerText = delta;
                 if(delta > 0.2) document.getElementById("v_delta").parentElement.classList.add("txt-red");
                 else document.getElementById("v_delta").parentElement.classList.remove("txt-red");
 
+                document.getElementById("v_motorTemp").innerText = parseFloat(data[4]).toFixed(1);
+                document.getElementById("v_hotSpot").innerText = parseFloat(data[6]).toFixed(1);
+                document.getElementById("v_coolant").innerText = parseFloat(data[5]).toFixed(1);
+                document.getElementById("v_modA").innerText = parseFloat(data[9]).toFixed(1);
+                document.getElementById("v_modB").innerText = parseFloat(data[10]).toFixed(1);
+                document.getElementById("v_modC").innerText = parseFloat(data[11]).toFixed(1);
+
+                document.getElementById("v_tyreRpm").innerText = data[1];
+                document.getElementById("v_motorV").innerText = parseFloat(data[2]).toFixed(1);
+                document.getElementById("v_packA").innerText = parseFloat(data[12]).toFixed(1);
+                document.getElementById("v_motorA").innerText = parseFloat(data[3]).toFixed(1);
+                document.getElementById("v_cmdT").innerText = parseFloat(data[7]).toFixed(1);
+                document.getElementById("v_actT").innerText = parseFloat(data[8]).toFixed(1);
+
+                // Update Gauge
                 gauge.value = data[0];
 
-                cChart.data.datasets[0].data.push(data[2]); 
+                // Update Charts
+                cChart.data.datasets[0].data.push(data[3]); // Index 3 is Motor Current
                 cChart.data.datasets[0].data.shift(); 
                 cChart.update();
 
-                tChart.data.datasets[0].data.push(data[6]); 
-                tChart.data.datasets[1].data.push(data[7]); 
+                tChart.data.datasets[0].data.push(data[7]); // Cmd Torque
+                tChart.data.datasets[1].data.push(data[8]); // Act Torque
                 tChart.data.datasets[0].data.shift(); 
                 tChart.data.datasets[1].data.shift(); 
                 tChart.update();
 
+                // Append Data for Logging
                 if(isRecording) {
                     recordedData.push([new Date().toLocaleTimeString(), ...data]);
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error("Parse Error:", e);
+            }
         };
 
         client.connect({
@@ -291,3 +327,6 @@
     </script>
 </body>
 </html>
+
+                
+        
