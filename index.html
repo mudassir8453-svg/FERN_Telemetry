@@ -37,6 +37,7 @@
             border-bottom: 1px solid #222;
             padding-bottom: 20px;
             margin-bottom: 25px;
+            flex-wrap: wrap; /* Allows wrapping on smaller screens */
         }
         
         .brand-section { display: flex; align-items: center; gap: 20px; }
@@ -64,24 +65,29 @@
         .status-title { font-size: 0.6rem; color: #444; letter-spacing: 2px; text-transform: uppercase; }
         .status-val { font-size: 0.75rem; color: #777; font-weight: bold; margin-top: 4px; }
 
-        .ctrl-btn { background: #111; border: 1px solid #222; color: #eee; padding: 10px 22px; font-family: 'Orbitron'; font-size: 0.75rem; border-radius: 2px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px; }
+        .top-controls { display: flex; gap: 10px; }
+        .ctrl-btn { background: #111; border: 1px solid #222; color: #eee; padding: 10px 22px; font-family: 'Orbitron'; font-size: 0.75rem; border-radius: 2px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .ctrl-btn:hover { border-color: var(--neon-green); color: var(--neon-green); }
         .recording .rec-dot { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); animation: pulse 1s infinite; }
         .rec-dot { height:10px; width:10px; background:#333; border-radius:50%; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
         .main-container { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 25px; height: 350px; margin-bottom: 30px; }
-        .gauge-container { display: flex; justify-content: center; align-items: center; background: #050505; border: 1px solid #111; border-radius: 50%; box-shadow: inset 0 0 50px rgba(0,0,0,1); }
+        .gauge-container { display: flex; justify-content: center; align-items: center; background: #050505; border: 1px solid #111; border-radius: 10px; box-shadow: inset 0 0 50px rgba(0,0,0,1); padding: 10px; }
+        
+        /* Make canvas responsive */
+        canvas { max-width: 100%; }
+        
         .chart-card { background: var(--card-bg); border: 1px solid #111; padding: 15px; border-radius: 4px; display: flex; flex-direction: column; }
         .chart-card h3 { margin: 0 0 15px 0; font-family: 'Orbitron'; font-size: 0.8rem; color: #444; letter-spacing: 2px; text-transform: uppercase; }
 
         .telemetry-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
-        .data-box { background: #080808; border: 1px solid #111; padding: 15px; border-radius: 2px; border-left: 3px solid #222; transition: 0.2s; }
+        .data-box { background: #080808; border: 1px solid #111; padding: 15px; border-radius: 2px; border-left: 3px solid #222; transition: 0.2s; overflow: hidden; }
         .data-box:hover { border-color: #333; background: #0c0c0c; }
-        .data-label { font-size: 0.6rem; color: #444; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
-        .data-value { font-family: 'Orbitron'; font-size: 1.4rem; color: #fff; }
-        .unit { font-size: 0.7rem; color: #333; margin-left: 5px; font-family: 'Roboto Mono'; }
-        .id-label { font-size: 0.65rem; color: #666; margin-left: 5px; font-family: 'Roboto Mono'; }
+        .data-label { font-size: 0.6rem; color: #444; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; white-space: nowrap; }
+        .data-value { font-family: 'Orbitron'; font-size: 1.4rem; color: #fff; display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+        .unit { font-size: 0.7rem; color: #333; font-family: 'Roboto Mono'; }
+        .id-label { font-size: 0.65rem; color: #666; font-family: 'Roboto Mono'; }
 
         .border-blue { border-left-color: var(--neon-blue); }
         .border-green { border-left-color: var(--neon-green); }
@@ -91,6 +97,39 @@
         .txt-red { color: var(--neon-red) !important; }
         .txt-green { color: var(--neon-green) !important; }
         .txt-blue { color: var(--neon-blue) !important; }
+
+        /* =========================================
+           MOBILE RESPONSIVENESS
+           ========================================= */
+        @media (max-width: 1200px) {
+            .telemetry-grid { grid-template-columns: repeat(3, 1fr); }
+            .main-container { height: 300px; }
+        }
+
+        @media (max-width: 850px) {
+            header { flex-direction: column; gap: 20px; align-items: stretch; }
+            .brand-section { justify-content: center; }
+            .status-center { justify-content: space-between; }
+            .status-box { flex: 1; }
+            .top-controls { justify-content: space-between; }
+            .ctrl-btn { flex: 1; }
+            
+            .main-container { 
+                grid-template-columns: 1fr; 
+                height: auto; 
+                gap: 15px; 
+            }
+            .gauge-container { height: 280px; }
+            .chart-card { height: 220px; }
+            
+            .telemetry-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .data-value { font-size: 1.1rem; }
+            .data-label { font-size: 0.55rem; letter-spacing: 1px; }
+        }
+
+        @media (max-width: 400px) {
+            .telemetry-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -102,7 +141,7 @@
             </div>
             <div>
                 <h1>FERN <span style="color:var(--neon-red)">EV</span></h1>
-                <div style="font-size: 0.6rem; letter-spacing: 3px; color: #444;">POWERTRAIN TELEMETRY SYSTEM</div>
+                <div style="font-size: 0.6rem; letter-spacing: 3px; color: #444;">POWERTRAIN TELEMETRY</div>
             </div>
         </div>
 
@@ -118,16 +157,16 @@
     </header>
 
     <div class="main-container">
-        <div class="chart-card">
+        <div class="gauge-container" style="order: 2;">
+            <canvas id="rpmGauge"></canvas>
+        </div>
+
+        <div class="chart-card" style="order: 1;">
             <h3>DC BUS CURRENT</h3>
             <div style="flex-grow:1; position: relative;"><canvas id="currChart"></canvas></div>
         </div>
 
-        <div class="gauge-container">
-            <canvas id="rpmGauge"></canvas>
-        </div>
-
-        <div class="chart-card">
+        <div class="chart-card" style="order: 3;">
             <h3>TORQUE MAP</h3>
             <div style="flex-grow:1; position: relative;"><canvas id="torqueChart"></canvas></div>
         </div>
@@ -168,7 +207,6 @@
 
         function downloadCSV() {
             if(recordedData.length === 0) return alert("No data recorded!");
-            // Exact header mapping matching the 20-variable C++ Payload
             let csv = "Timestamp,Motor_RPM,Tyre_RPM,Motor_V,Motor_A,Motor_Temp,Coolant_Temp,Hot_Spot,Cmd_Torque,Act_Torque,ModA_Temp,ModB_Temp,ModC_Temp,Pack_Current,Pack_Voltage,SOC,BMS_Temp,Low_Cell_V,Low_Cell_ID,High_Cell_V,High_Cell_ID\n";
             recordedData.forEach(row => csv += row.join(",") + "\n");
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -178,10 +216,11 @@
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
+        // Adjust gauge initialization to fit responsive containers
         const gauge = new RadialGauge({
             renderTo: 'rpmGauge',
-            width: 350,
-            height: 350,
+            width: 250,  // Slightly smaller base width to prevent clipping
+            height: 250,
             units: "M-RPM",
             minValue: 0,
             maxValue: 6000,
@@ -247,13 +286,6 @@
                 let data = msg.payloadString.replace("/*", "").replace("*/", "").split(",");
                 if(data.length < 20) return;
 
-                /* C++ Array Index Mapping:
-                   0: M-RPM, 1: T-RPM, 2: M-V, 3: M-A, 4: M-Temp, 5: Coolant, 6: HotSpot, 7: CmdT, 8: ActT, 
-                   9: ModA, 10: ModB, 11: ModC, 12: PackA, 13: PackV, 14: SOC, 15: BmsTemp, 
-                   16: LowV, 17: LowID, 18: HighV, 19: HighID 
-                */
-
-                // Dashboard Elements mapping
                 document.getElementById("v_packV").innerText = parseFloat(data[13]).toFixed(1);
                 document.getElementById("v_soc").innerText = parseFloat(data[14]).toFixed(1);
                 document.getElementById("v_bmsTemp").innerText = data[15];
@@ -284,21 +316,18 @@
                 document.getElementById("v_cmdT").innerText = parseFloat(data[7]).toFixed(1);
                 document.getElementById("v_actT").innerText = parseFloat(data[8]).toFixed(1);
 
-                // Update Gauge
                 gauge.value = data[0];
 
-                // Update Charts
-                cChart.data.datasets[0].data.push(data[3]); // Index 3 is Motor Current
+                cChart.data.datasets[0].data.push(data[3]); 
                 cChart.data.datasets[0].data.shift(); 
                 cChart.update();
 
-                tChart.data.datasets[0].data.push(data[7]); // Cmd Torque
-                tChart.data.datasets[1].data.push(data[8]); // Act Torque
+                tChart.data.datasets[0].data.push(data[7]); 
+                tChart.data.datasets[1].data.push(data[8]); 
                 tChart.data.datasets[0].data.shift(); 
                 tChart.data.datasets[1].data.shift(); 
                 tChart.update();
 
-                // Append Data for Logging
                 if(isRecording) {
                     recordedData.push([new Date().toLocaleTimeString(), ...data]);
                 }
@@ -327,6 +356,3 @@
     </script>
 </body>
 </html>
-
-                
-        
